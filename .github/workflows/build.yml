@@ -1,0 +1,41 @@
+name: APK yigish
+on: [push, workflow_dispatch]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Loyihani ochish
+        run: |
+          test -f project.zip
+          mkdir work
+          unzip -q project.zip -d work
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Modelni yuklash
+        run: |
+          mkdir -p work/app/src/main/assets
+          curl -fL --retry 3 -o work/app/src/main/assets/hand_landmarker.task https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task
+          ls -l work/app/src/main/assets
+      - name: SDK litsenziyalari
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+      - name: APK yigish
+        working-directory: work
+        run: gradle assembleDebug --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qol-boshqaruv-apk
+          path: work/app/build/outputs/apk/debug/app-debug.apk
+      - name: Release yaratish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp work/app/build/outputs/apk/debug/app-debug.apk qol-boshqaruv.apk
+          gh release create "v${{ github.run_number }}" qol-boshqaruv.apk --title "Qol boshqaruv v${{ github.run_number }}" --notes "Android APK"
