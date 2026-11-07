@@ -7,11 +7,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Loyihani ochish
         run: |
-          test -f "project (1).zip"
+          f="$(git log --name-only --diff-filter=AM --pretty=format: -- '*.zip' | grep -v '^$' | sed -n '1p')"
+          echo "Ishlatilgan zip: $f"
+          test -f "$f"
           mkdir work
-          unzip -q "project (1).zip" -d work
+          unzip -q "$f" -d work
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
